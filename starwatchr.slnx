@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="api/Api.csproj">
+    <BuildDependency Project="core/Core.csproj" />
+    <BuildDependency Project="infrastructure/Infrastructure.csproj" />
+  </Project>
+  <Project Path="core/Core.csproj" />
+  <Project Path="infrastructure/Infrastructure.csproj">
+    <BuildDependency Project="core/Core.csproj" />
+  </Project>
+</Solution>
