@@ -1,11 +1,12 @@
-﻿using Core.Entities.Common;
+﻿using Core.Entities;
+using Core.Entities.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data
 {
     public class SWDbContext : DbContext
     {
-        //public DbSet<HighScore> HighScores { get; set; }
+        public DbSet<Apod> Apods { get; set; }
 
         public SWDbContext(DbContextOptions<SWDbContext> options) : base(options) { }
 

@@ -31,7 +31,10 @@ builder.Services.AddDbContext<SWDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient<INasaApodService, NasaApodService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
