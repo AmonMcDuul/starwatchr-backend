@@ -25,7 +25,7 @@ namespace Api.Controllers
                 return NotFound();
             }
 
-            return Ok(new NasaApodViewModel(apod.Date, apod.Title, apod.Explanation, apod.MediaType, apod.Url,  apod.HdUrl));
+            return Ok(new NasaApodViewModel(apod.Date, apod.Title, apod.Explanation, apod.MediaType, apod.Url,  apod.HdUrl, apod.Copyright));
         }
     }
 

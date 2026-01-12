@@ -8,5 +8,6 @@
         public string Media_Type { get; set; } = null!;
         public string Url { get; set; } = null!;
         public string? Hdurl { get; set; }
+        public string? Copyright { get; set; }
     }
 }

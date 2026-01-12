@@ -10,8 +10,9 @@ namespace Api.DTO
         public string MediaType { get; set; }
         public string Url { get; set; }
         public string? Hdurl { get; set; }
+        public string? Copyright { get; set; }
 
-        public NasaApodViewModel(DateOnly date, string title, string explanation, string mediaType, string url, string? hdUrl)
+        public NasaApodViewModel(DateOnly date, string title, string explanation, string mediaType, string url, string? hdUrl, string? copyright)
         {
             Date = date;
             Title = title;
@@ -19,6 +20,7 @@ namespace Api.DTO
             MediaType = mediaType;
             Url = url;
             Hdurl = hdUrl;
+            Copyright = copyright;
         }
     }
 

@@ -12,10 +12,11 @@ namespace Core.Entities
 
         public string Url { get; private set; }
         public string? HdUrl { get; private set; }
+        public string? Copyright {  get; private set; }
 
         private Apod() { }
 
-        public Apod(DateOnly date, string title, string explanation, string mediaType, string url, string? hdUrl)
+        public Apod(DateOnly date, string title, string explanation, string mediaType, string url, string? hdUrl, string? copyright)
         {
             Date = date;
             Title = title;
@@ -23,6 +24,7 @@ namespace Core.Entities
             MediaType = mediaType;
             Url = url;
             HdUrl = hdUrl;
+            Copyright = copyright;
         }
     }
 }

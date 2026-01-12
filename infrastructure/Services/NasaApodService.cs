@@ -43,10 +43,12 @@ namespace Infrastructure.Services
 
             if (dto == null)
             {
-                return null;
+                //return a default
+                var def = new Apod(new DateOnly(2023, 10, 12), "The Pillars of Creation", "Stars are forming deep within the iconic Pillars of Creation. This image from the James Webb Space Telescope reveals stunning detail in a region of space filled with gas, dust and cosmic light.", "image", "https://apod.nasa.gov/apod/image/2210/stsci-pillarsofcreation.png", null, "NASA / ESA / CSA / STScI");
+                return def;
             }
 
-            var apod = new Apod(today, dto.Title, dto.Explanation, dto.Media_Type, dto.Url, dto.Hdurl);
+            var apod = new Apod(today, dto.Title, dto.Explanation, dto.Media_Type, dto.Url, dto.Hdurl, dto.Copyright);
 
             _db.Apods.Add(apod);
             await _db.SaveChangesAsync();
