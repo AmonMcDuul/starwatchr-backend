@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Api.Controllers
 {
     [ApiController]
-    [Route("api/apod")]
+    [Route("[controller]")]
     public class NasaApodController : ControllerBase
     {
         private readonly INasaApodService _apodService;

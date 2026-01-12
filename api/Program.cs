@@ -33,7 +33,12 @@ builder.Services.AddDbContext<SWDbContext>(options =>
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddHttpClient<INasaApodService, NasaApodService>();
+builder.Services.AddHttpClient<INasaApodService, NasaApodService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+    //in toekomst misschien polly / retry?
+});
+
 
 builder.Services.AddCors(options =>
 {
