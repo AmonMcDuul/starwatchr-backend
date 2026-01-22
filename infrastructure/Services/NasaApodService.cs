@@ -49,12 +49,13 @@ namespace Infrastructure.Services
                     return GetFallbackApod();
                 }
 
+                DateOnly apodDate = DateOnly.Parse(dto.Date);
                 var apod = new Apod(
-                    today,
+                    apodDate,
                     dto.Title,
                     dto.Explanation,
                     dto.Media_Type,
-                    dto.Url,
+                    dto.Url ?? "",
                     dto.Hdurl,
                     dto.Copyright
                 );

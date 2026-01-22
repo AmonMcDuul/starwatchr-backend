@@ -7,6 +7,7 @@ namespace Infrastructure.Data
     public class SWDbContext : DbContext
     {
         public DbSet<Apod> Apods { get; set; }
+        public DbSet<PageView> PageViews { get; set; }
 
         public SWDbContext(DbContextOptions<SWDbContext> options) : base(options) { }
 

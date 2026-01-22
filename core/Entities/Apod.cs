@@ -10,7 +10,7 @@ namespace Core.Entities
         public string Explanation { get; private set; }
         public string MediaType { get; private set; }
 
-        public string Url { get; private set; }
+        public string Url { get; private set; } = "";
         public string? HdUrl { get; private set; }
         public string? Copyright {  get; private set; }
 
