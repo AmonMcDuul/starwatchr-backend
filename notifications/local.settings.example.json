@@ -1,0 +1,22 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "SITE_URL": "http://localhost:4200",
+    "NOTIFICATIONS_API_URL": "http://localhost:4200/notifications-api",
+    "NOTIFICATION_MODE": "live",
+    "TOKEN_SECRET": "REPLACE_WITH_AT_LEAST_32_RANDOM_CHARACTERS",
+    "NOTIFICATIONS_ADMIN_KEY": "",
+    "MAIL_SERVICE_URL": "http://localhost:5016/internal/notification-mail",
+    "MAIL_SERVICE_KEY": "MATCH_NotificationDelivery__ApiKey_IN_THE_DOTNET_API",
+    "VAPID_PUBLIC_KEY": "",
+    "VAPID_PRIVATE_KEY": "",
+    "VAPID_SUBJECT": "mailto:YOUR_ADDRESS",
+    "NOTIFICATIONS_ANALYTICS_KEY": "",
+    "MAIL_SERVICE_WAKE_ENABLED": "true"
+  },
+  "Host": {
+    "CORS": "http://localhost:4200,http://127.0.0.1:4200,http://localhost:4204,http://127.0.0.1:4204"
+  }
+}

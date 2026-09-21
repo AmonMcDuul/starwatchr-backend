@@ -9,7 +9,7 @@
 
     public record PageViewDto(
         string UserSeed,
-        DateOnly Day,
+        DateTime Day,
         string Path
     );
 

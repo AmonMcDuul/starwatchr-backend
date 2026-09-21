@@ -1,0 +1,16 @@
+src/
+node_modules/typescript/
+node_modules/@types/
+local.settings.json
+infra/
+README.md
+
+.azurite/
+dist/tests/
+dist/local.js
+scripts/
+local.settings.example.json
+.git/
+.local/
+.env
+.env.*

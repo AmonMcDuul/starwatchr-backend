@@ -1,0 +1,7 @@
+node_modules/
+dist/
+local.settings.json
+.env
+.azurite/
+infra/parameters.local.json
+.local/

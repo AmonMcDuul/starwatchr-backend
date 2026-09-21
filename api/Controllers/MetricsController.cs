@@ -1,4 +1,5 @@
-﻿using Api.ViewModels;
+using System.ComponentModel.DataAnnotations;
+using Api.ViewModels;
 using Core.Entities;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -8,24 +9,32 @@ namespace Api.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AnalyticsController : ControllerBase
+    public class MetricsController : ControllerBase
     {
         private readonly SWDbContext _context;
 
-        public AnalyticsController(SWDbContext context)
+        public MetricsController(SWDbContext context)
         {
             _context = context;
         }
 
 
         [HttpGet("pageviews")]
-        public async Task<IEnumerable<PageViewDto>> GetPageViews()
+        public async Task<IEnumerable<PageViewDto>> GetPageViews(
+            [FromQuery, Range(1, 366)] int? days = null)
         {
-            return await _context.PageViews
-                .OrderByDescending(p => p.Day)
+            var query = _context.PageViews.AsNoTracking();
+            if (days is not null)
+            {
+                var since = DateTime.UtcNow.AddDays(-days.Value);
+                query = query.Where(p => p.CreatedAt >= since);
+            }
+
+            return await query
+                .OrderByDescending(p => p.CreatedAt)
                 .Select(p => new PageViewDto(
                     p.UserSeed,
-                    p.Day,
+                    DateTime.SpecifyKind(p.CreatedAt, DateTimeKind.Utc),
                     p.Path
                 ))
                 .ToListAsync();
@@ -48,7 +57,7 @@ namespace Api.Controllers
         [HttpPost("pageview")]
         public async Task<IActionResult> Track(PageViewModel model)
         {
-            PageView newPageView =new (model.UserSeed, model.Day, model.Path);
+            PageView newPageView = new(model.UserSeed, model.Day, model.Path);
             await _context.PageViews.AddAsync(newPageView);
             await _context.SaveChangesAsync();
             return Ok();
