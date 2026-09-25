@@ -1,0 +1,9 @@
+{
+  "core.ts": "4b6725ee7b897c776f0ba6a8aadf0355b1b5891ea448dbd9a46ac64a8f948b26",
+  "data/caldwell.json": "1a2e3bafae76894b2001e106191aac32ec9e2e7a4ea7d1ce7ec440b02edec279",
+  "data/messier.json": "415e07849a117f0c8a88886515ffce86591c0a291e22366d41d8944596474154",
+  "engine.ts": "6b546db9c0a42a05f489cedbcddefefd346d03805b489a7a952edb21bd8a3048",
+  "evening-summary.ts": "3cb9745349a4b59fe34e86b17ce2155ff89ad3c84ae1e7665d22577fea63d4b7",
+  "evening-targets.ts": "318e685e9f43be42a29a936a490ee36a1112fe3328f246de229dfc2891bb7ec4",
+  "presentation.ts": "61d1dae9fa44d4bd58154379c26b91f1bc8d8aa7829bbb2147c1d499d47ad058"
+}

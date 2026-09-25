@@ -99,3 +99,28 @@ test('development subscriptions and concurrency versions survive restart', async
     'active',
   );
 });
+
+
+test('push uses saved advice and keeps a useful provider TTL near the send deadline', async () => {
+  const webpush = (await import('web-push')).default;
+  const {eveningFixture} = await import('./evening-fixture');
+  const advice = eveningFixture();
+  const now = Date.now();
+  advice.best = {start:now+60_000,end:now+3_600_000,score:90};
+  const transport = mock.method(webpush,'sendNotification', async (_sub: unknown,payload: unknown,options: any) => {
+    const message = JSON.parse(payload as string).notification;
+    assert(message.title.includes(advice.place.name));
+    assert(!message.title.includes('Changed location'));
+    assert(message.data.url.includes('/evening#report='));
+    assert(options.TTL > 3500 && options.TTL <= 3600);
+    assert.equal(options.urgency,'high');
+    return {statusCode:201,body:'',headers:{}};
+  });
+  try {
+    const sender = new ProviderSender({siteUrl:'https://starwatchr.com',apiUrl:'https://example.test/api',tokenSecret:'test-secret-with-at-least-32-characters',mode:'live',emailEnabled:false,pushEnabled:true,vapidPublicKey:'test',adminKey:''});
+    const sub = {channel:'push',push:{endpoint:'https://fcm.googleapis.com/test',keys:{auth:'test',p256dh:'test'}},place:{...advice.place,name:'Changed location',timeZone:'UTC'}} as Subscription;
+    const job = {id:'fixture',createdAt:now,expires:now+1000,advice} as Job;
+    assert.deepEqual(await sender.send(sub,job),{providerId:'201'});
+    assert.equal(transport.mock.callCount(),1);
+  } finally {transport.mock.restore();}
+});

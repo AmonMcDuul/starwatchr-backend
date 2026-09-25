@@ -12,3 +12,15 @@ const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'
 if (pkg.dependencies['astronomy-engine'] !== '2.1.19')
   throw new Error('Keep Astronomy Engine pinned in both repositories.');
 console.log('Observing engine verified: ' + hash);
+
+for (const [file, expected] of Object.entries(
+  JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')),
+)) {
+  if (
+    crypto
+      .createHash('sha256')
+      .update(fs.readFileSync(path.join(dir, file)))
+      .digest('hex') !== expected
+  )
+    throw new Error('Shared file changed without synchronization: ' + file);
+}

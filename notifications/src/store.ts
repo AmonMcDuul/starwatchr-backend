@@ -1,4 +1,5 @@
 import { TableClient } from '@azure/data-tables';
+import { TableJson, encodeTableJson, decodeTableJson } from './table-json';
 export interface RecordValue {
   id: string;
   expires?: number;
@@ -24,8 +25,8 @@ export class AzureStore implements Store {
   }
   async get<T>(kind: string, id: string): Promise<Stored<T> | null> {
     try {
-      const e = await this.client.getEntity<{ json: string }>(kind, id);
-      return { value: JSON.parse(e.json), etag: e.etag! };
+      const e = await this.client.getEntity<TableJson>(kind, id);
+      return { value: decodeTableJson<T>(e), etag: e.etag! };
     } catch (e: any) {
       if (e.statusCode === 404) return null;
       throw e;
@@ -36,7 +37,7 @@ export class AzureStore implements Store {
       await this.client.createEntity({
         partitionKey: kind,
         rowKey: value.id,
-        json: JSON.stringify(value),
+        ...encodeTableJson(value),
       });
       return true;
     } catch (e: any) {
@@ -47,7 +48,7 @@ export class AzureStore implements Store {
   async replace<T extends RecordValue>(kind: string, value: T, etag: string) {
     try {
       await this.client.updateEntity(
-        { partitionKey: kind, rowKey: value.id, json: JSON.stringify(value) },
+        { partitionKey: kind, rowKey: value.id, ...encodeTableJson(value) },
         'Replace',
         { etag },
       );
@@ -58,10 +59,10 @@ export class AzureStore implements Store {
     }
   }
   async *list<T>(kind: string) {
-    for await (const e of this.client.listEntities<{ json: string }>({
+    for await (const e of this.client.listEntities<TableJson>({
       queryOptions: { filter: "PartitionKey eq '" + kind + "'" },
     }))
-      yield { value: JSON.parse(e.json) as T, etag: e.etag! };
+      yield { value: decodeTableJson<T>(e), etag: e.etag! };
   }
   async remove(kind: string, id: string, etag: string) {
     await this.client.deleteEntity(kind, id, { etag });

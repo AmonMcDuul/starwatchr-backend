@@ -294,7 +294,7 @@ test('email renders escaped, accessible content and a real text alternative', as
   );
   assert(!mail.html.includes('<img src=x'));
   assert(mail.html.includes('&lt;img'));
-  assert(mail.text.includes('Best window:'));
+  assert(mail.text.includes('Your observing window:'));
 });
 test('expired reports, admin access and terminal jobs have bounded retention', async () => {
   const c = setup();

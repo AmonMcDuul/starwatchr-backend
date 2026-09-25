@@ -42,3 +42,39 @@ test(
     }
   },
 );
+
+test(
+  'large forecast records survive create, list and replacements across Azure clients',
+  { skip: process.env['RUN_AZURITE_TESTS'] !== '1' },
+  async () => {
+    const connection = 'UseDevelopmentStorage=true';
+    const first = new AzureStore(connection);
+    const second = new AzureStore(connection);
+    await first.initialize();
+    const id = randomUUID();
+    // Azurite corrupts multibyte text on large PUT requests; codec tests cover Unicode.
+    const large = { id, forecast: 'clear '.repeat(18000) };
+    try {
+      assert.equal(await first.create('integration', large), true);
+      let row = (await second.get<typeof large>('integration', id))!;
+      assert.deepEqual(row.value, large);
+      const listed = [];
+      for await (const item of second.list<typeof large>('integration')) {
+        if (item.value.id === id) listed.push(item.value);
+      }
+      assert.deepEqual(listed, [large]);
+
+      const small = { id, forecast: 'updated' };
+      assert.equal(await first.replace('integration', small, row.etag), true);
+      assert.equal(await second.replace('integration', large, row.etag), false);
+      row = (await second.get<typeof large>('integration', id))!;
+      assert.deepEqual(row.value, small);
+
+      assert.equal(await first.replace('integration', large, row.etag), true);
+      assert.deepEqual((await second.get<typeof large>('integration', id))!.value, large);
+    } finally {
+      const row = await first.get<typeof large>('integration', id);
+      if (row) await first.remove('integration', id, row.etag);
+    }
+  },
+);

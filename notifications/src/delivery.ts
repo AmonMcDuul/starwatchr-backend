@@ -1,3 +1,6 @@
+import { renderTransactional } from './transactional-email';
+import { renderAdvice } from './advice-email';
+export { renderAdvice } from './advice-email';
 import webpush from 'web-push';
 import { BackendReadiness, MailServiceError } from './backend-readiness';
 import { Advice } from './shared/engine';
@@ -14,85 +17,6 @@ export function clock(time: number, zone: string) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(time);
-}
-export function renderAdvice(a: Advice, link: string, unsubscribe: string, manage: string) {
-  const best = a.best!,
-    zone = a.place.timeZone;
-  const detailedClock = (t: number) =>
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: zone,
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'shortOffset',
-    }).format(t);
-  const when = detailedClock(best.start) + '–' + detailedClock(best.end);
-  const title = 'Your observing evening in ' + a.place.name;
-  const lines = [
-    title,
-    a.night + ' · ' + zone,
-    'Best window: ' + when,
-    ...a.targets.map(
-      (t) => t.name + ' — ' + Math.round(t.altitude) + '° high, ' + clock(t.time, zone),
-    ),
-    ...a.reasons,
-    'Forecast retrieved ' + new Date(a.fetchedAt).toISOString(),
-    'View evening: ' + link,
-    'Settings: ' + manage,
-    'Unsubscribe: ' + unsubscribe,
-  ];
-  const slots = a.slots.filter(
-    (s) => s.start >= best.start - 3 * 3600000 && s.end <= best.end + 3 * 3600000,
-  );
-  const timeline = slots
-    .map(
-      (s, i) =>
-        (i % 6 === 0 ? '<tr>' : '') +
-        '<td style="padding:8px 3px;text-align:center;background:' +
-        (s.suitable ? '#d5e8d8' : '#e6e8ed') +
-        ';color:#182b24;font-size:11px">' +
-        clock(s.start, zone) +
-        '<br>' +
-        (s.cloud === null ? '?' : Math.round(s.cloud) + '%') +
-        '</td>' +
-        (i % 6 === 5 || i === slots.length - 1 ? '</tr>' : ''),
-    )
-    .join('');
-  const html =
-    '<html><body style="font-family:Arial,sans-serif;color:#253047"><main style="max-width:640px;margin:auto;padding:24px"><h1>' +
-    escape(title) +
-    '</h1><p>' +
-    escape(a.night + ' · ' + zone) +
-    '</p><h2>' +
-    escape(when) +
-    '</h2><p>Best continuous window within your observing limits.</p><table role="presentation" style="width:100%;border-spacing:2px">' +
-    timeline +
-    '</table><p style="font-size:12px">Cloud cover per half hour. Green cells meet your selected conditions; weather is an hourly forecast, not a guarantee.</p><ul>' +
-    a.targets
-      .map(
-        (t) =>
-          '<li>' +
-          escape(t.name) +
-          ' — ' +
-          Math.round(t.altitude) +
-          '° high, ' +
-          clock(t.time, zone) +
-          '</li>',
-      )
-      .join('') +
-    '</ul>' +
-    (a.slots.some((s) => s.suitable && s.dewRisk)
-      ? '<p>Temperature approaches the dew point during this window. Dew may form on equipment.</p>'
-      : '') +
-    '<p><a href="' +
-    escape(link) +
-    '">View your evening</a></p><p style="font-size:12px">Forecast retrieved ' +
-    escape(new Date(a.fetchedAt).toISOString()) +
-    '. Stability and transparency are estimates.</p><hr><p><a href="' +
-    escape(manage) +
-    '">Settings</a> · <a href="' +
-    escape(unsubscribe) +
-    '">Unsubscribe</a></p></main></body></html>';
-  return { subject: title + ' · ' + when, text: lines.join('\n'), html };
 }
 export class ProviderSender implements Sender {
   private tokens: Tokens;
@@ -138,11 +62,11 @@ export class ProviderSender implements Sender {
         s.push,
         JSON.stringify({
           notification: {
-            title: 'Tonight in ' + s.place.name,
+            title: 'Tonight in ' + a.place.name,
             body:
-              clock(best.start, s.place.timeZone) +
+              clock(best.start, a.place.timeZone) +
               '–' +
-              clock(best.end, s.place.timeZone) +
+              clock(best.end, a.place.timeZone) +
               ': a suitable observing window. ' +
               a.targets
                 .slice(0, 2)
@@ -155,7 +79,8 @@ export class ProviderSender implements Sender {
           },
         }),
         {
-          TTL: Math.max(0, Math.min(3600, Math.floor((j.expires - Date.now()) / 1000))),
+          TTL: Math.max(0, Math.min(3600, Math.floor((best.end - Date.now()) / 1000))),
+          urgency: 'high',
           timeout: 15000,
           vapidDetails: {
             subject: process.env['VAPID_SUBJECT']!,
@@ -182,24 +107,7 @@ export class ProviderSender implements Sender {
       message = renderAdvice(j.advice!, link, unsubscribe, manage);
     } else {
       const link = this.config.siteUrl + '/alerts#' + j.kind + '=' + j.token;
-      const label =
-        j.kind === 'confirm' ? 'Confirm your observing alerts' : 'Manage your observing alerts';
-      message = {
-        subject: label,
-        text:
-          label +
-          '\n' +
-          link +
-          '\nThis link expires in 24 hours. If you did not request it, ignore this email.',
-        html:
-          '<p>' +
-          label +
-          '</p><p><a href="' +
-          escape(link) +
-          '">' +
-          label +
-          '</a></p><p>This link expires in 24 hours. If you did not request it, ignore this email.</p>',
-      };
+      message = renderTransactional(j.kind === 'confirm' ? 'confirm' : 'manage', link);
     }
     const { relay, key } = this.mailConnection();
     const response = await fetch(relay, {
