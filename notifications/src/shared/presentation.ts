@@ -1,6 +1,14 @@
 import { Advice } from './core';
 import { EveningHour } from './evening-summary';
 
+/** The best recommendations first, whatever order the list is displayed in. */
+export function topTargets<T extends { rank?: number }>(targets: readonly T[], count: number): T[] {
+  return targets
+    .map((target, index) => ({ target, index }))
+    .sort((a, b) => (a.target.rank ?? 1000 + a.index) - (b.target.rank ?? 1000 + b.index))
+    .slice(0, count)
+    .map(({ target }) => target);
+}
 export function adviceTime(time: number, zone: string, offset = false): string {
   return new Intl.DateTimeFormat('en-GB', {
     timeZone: zone,

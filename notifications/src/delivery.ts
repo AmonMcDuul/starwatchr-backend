@@ -4,6 +4,8 @@ export { renderAdvice } from './advice-email';
 import webpush from 'web-push';
 import { BackendReadiness, MailServiceError } from './backend-readiness';
 import { Advice } from './shared/engine';
+import { eveningSummary } from './shared/evening-summary';
+import { adviceTime, topTargets, valueRange } from './shared/presentation';
 import { Config, Job, Sender, Subscription } from './model';
 import { Tokens } from './security';
 const escape = (s: string) =>
@@ -62,16 +64,7 @@ export class ProviderSender implements Sender {
         s.push,
         JSON.stringify({
           notification: {
-            title: 'Tonight in ' + a.place.name,
-            body:
-              clock(best.start, a.place.timeZone) +
-              '–' +
-              clock(best.end, a.place.timeZone) +
-              ': a suitable observing window. ' +
-              a.targets
-                .slice(0, 2)
-                .map((t) => t.name)
-                .join(', '),
+            ...pushText(a),
             icon: this.config.siteUrl + '/assets/img/pwa-icon-192.png',
             tag: 'starwatchr-' + a.night,
             renotify: false,
@@ -137,4 +130,26 @@ export class ProviderSender implements Sender {
     const result = (await response.json()) as { id: string };
     return { providerId: result.id };
   }
+}
+
+/** Push uses the same verdict, window, conditions and top picks as the email and /evening. */
+export function pushText(a: Advice): { title: string; body: string } {
+  const summary = eveningSummary(a),
+    zone = a.place.timeZone;
+  const window = a.best
+    ? adviceTime(a.best.start, zone) + '–' + adviceTime(a.best.end, zone)
+    : 'No suitable window';
+  const facts = [
+    'Cloud ' + valueRange(summary.cloudMin, summary.cloudMax, '%'),
+    summary.moonIllumination === null
+      ? ''
+      : 'Moon ' + summary.moonIllumination + '% ' + (summary.moonUp ? 'up' : 'set'),
+  ].filter(Boolean);
+  const top = topTargets(a.targets, 2).map((t) => t.name);
+  return {
+    title: 'Tonight in ' + a.place.name + ' · ' + window,
+    body: [summary.title + '.', facts.join(' · ') + '.', top.length ? 'Best: ' + top.join(', ') + '.' : '']
+      .filter(Boolean)
+      .join(' '),
+  };
 }

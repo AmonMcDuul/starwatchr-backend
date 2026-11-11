@@ -44,8 +44,8 @@ export function renderAdvice(a: Advice, link: string, unsubscribe: string, manag
     'deep-sky': 'Deep sky',
     'moon-planets': 'Moon & planets',
   };
-  const context =
-    a.night + ' · ' + labels[a.preferences.equipment] + ' · ' + labels[a.preferences.profile];
+  // Equipment no longer changes the recommendations, so it is not shown.
+  const context = a.night + ' · ' + labels[a.preferences.profile];
   const conditions = [
     'Cloud ' + valueRange(summary.cloudMin, summary.cloudMax, '%'),
     'Wind up to ' + valueRange(summary.windMax, summary.windMax, ' km/h'),

@@ -2,7 +2,9 @@ const fs = require('node:fs'),
   path = require('node:path'),
   crypto = require('node:crypto');
 const dir = path.resolve(__dirname, process.argv[2] || '../src/shared');
-const source = fs.readFileSync(path.join(dir, 'engine.ts'));
+// Git checkouts on Windows and Linux must produce the same text checksum.
+const readText = (file) => fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+const source = readText(path.join(dir, 'engine.ts'));
 const hash = crypto.createHash('sha256').update(source).digest('hex');
 if (fs.readFileSync(path.join(dir, 'engine.sha256'), 'utf8').trim() !== hash)
   throw new Error(
@@ -19,7 +21,7 @@ for (const [file, expected] of Object.entries(
   if (
     crypto
       .createHash('sha256')
-      .update(fs.readFileSync(path.join(dir, file)))
+      .update(readText(path.join(dir, file)))
       .digest('hex') !== expected
   )
     throw new Error('Shared file changed without synchronization: ' + file);

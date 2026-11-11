@@ -1,6 +1,7 @@
 import { Body, Equator, Horizon, Observer, Illumination, MoonPhase } from 'astronomy-engine';
+import { SEEING_LEVELS, SeeingLevel, seeingIndex } from './seeing';
 
-export const ENGINE_VERSION = '1.1.0';
+export const ENGINE_VERSION = '1.3.0';
 export type Profile = 'general' | 'deep-sky' | 'moon-planets';
 export type Equipment = 'eyes' | 'binoculars' | 'telescope';
 export interface Place {
@@ -24,7 +25,7 @@ export interface Preferences {
 }
 export const DEFAULT_PREFERENCES: Preferences = {
   profile: 'general',
-  equipment: 'binoculars',
+  equipment: 'telescope',
   startMinute: 1200,
   endMinute: 120,
   notifyMinute: 960,
@@ -50,6 +51,7 @@ export interface WeatherHour {
   precipitationProbability: number | null;
   precipitation: number | null;
   wind500Kmh: number | null;
+  upperAir?: SeeingLevel[];
 }
 export interface WeatherSnapshot {
   fetchedAt: number;
@@ -85,6 +87,8 @@ export interface Target {
   description?: string;
   tip?: string;
   difficulty?: TargetDifficulty | null;
+  /** 1 = best recommendation; the list itself is shown in time order. */
+  rank?: number;
   name: string;
   url: string;
   altitude: number;
@@ -119,6 +123,12 @@ export const HOURLY_VARIABLES = [
   'precipitation_probability',
   'precipitation',
   'wind_speed_500hPa',
+  ...SEEING_LEVELS.flatMap((level) => [
+    ...(level === 500 ? [] : [`wind_speed_${level}hPa`]),
+    `wind_direction_${level}hPa`,
+    `temperature_${level}hPa`,
+    `geopotential_height_${level}hPa`,
+  ]),
 ].join(',');
 export function weatherUrl(latitude: number, longitude: number): string {
   const q = new URLSearchParams({
@@ -167,6 +177,13 @@ export function normalizeWeather(api: any, fetchedAt: number): WeatherSnapshot {
         precipitation:
           api.hourly.time[i + 1] === value + 3600 ? take(i + 1, ['precipitation'], 0) : null,
         wind500Kmh: take(i, ['wind_speed_500hPa'], 0, 600),
+        upperAir: SEEING_LEVELS.map((pressureHpa) => ({
+          pressureHpa,
+          windKmh: take(i, [`wind_speed_${pressureHpa}hPa`], 0, 600),
+          windDirection: take(i, [`wind_direction_${pressureHpa}hPa`], 0, 360),
+          temperatureC: take(i, [`temperature_${pressureHpa}hPa`], -120, 60),
+          heightM: take(i, [`geopotential_height_${pressureHpa}hPa`], -500, 30000),
+        })),
       };
     })
     .sort((a: WeatherHour, b: WeatherHour) => a.time - b.time);
@@ -196,11 +213,7 @@ export function weatherMetrics(w: WeatherHour) {
             Number(w.humidity > 85) -
             Number(w.high > 60),
         );
-  // An indicative wind-based stability proxy, not measured astronomical seeing.
-  const seeing =
-    w.windKmh === null || w.wind500Kmh === null
-      ? null
-      : Math.max(1, Math.min(8, 8 - Math.floor(w.windKmh / 10) - Math.floor(w.wind500Kmh / 40)));
+  const seeing = seeingIndex(w);
   const score =
     effectiveCloud === null || transparency === null || seeing === null
       ? null

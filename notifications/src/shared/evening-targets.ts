@@ -11,7 +11,6 @@ import messierCatalog from './data/messier.json';
 import caldwellCatalog from './data/caldwell.json';
 import {
   Advice,
-  Equipment,
   Target,
   altitude,
   localParts,
@@ -53,86 +52,65 @@ const CATALOG = new Map<string, CatalogTarget>([
   ...caldwellCatalog.data.map((record) => [`C${record.messierNumber}`, record] as const),
 ]);
 
-// A varied observing list from both hemispheres, using the app's catalogue records and images.
-const DEEP_SKY: { id: string; equipment: Equipment }[] = [
-  { id: 'M31', equipment: 'eyes' },
-  { id: 'M45', equipment: 'eyes' },
-  { id: 'M44', equipment: 'eyes' },
-  { id: 'M7', equipment: 'eyes' },
-  { id: 'M42', equipment: 'binoculars' },
-  { id: 'M8', equipment: 'binoculars' },
-  { id: 'M35', equipment: 'binoculars' },
-  { id: 'M36', equipment: 'binoculars' },
-  { id: 'M37', equipment: 'binoculars' },
-  { id: 'M38', equipment: 'binoculars' },
-  { id: 'M41', equipment: 'binoculars' },
-  { id: 'M47', equipment: 'binoculars' },
-  { id: 'M13', equipment: 'telescope' },
-  { id: 'M3', equipment: 'telescope' },
-  { id: 'M5', equipment: 'telescope' },
-  { id: 'M15', equipment: 'telescope' },
-  { id: 'M57', equipment: 'telescope' },
-  { id: 'M27', equipment: 'telescope' },
-  { id: 'M81', equipment: 'telescope' },
-  { id: 'M82', equipment: 'telescope' },
-  { id: 'M2', equipment: 'telescope' },
-  { id: 'M6', equipment: 'binoculars' },
-  { id: 'M10', equipment: 'telescope' },
-  { id: 'M11', equipment: 'binoculars' },
-  { id: 'M12', equipment: 'telescope' },
-  { id: 'M17', equipment: 'binoculars' },
-  { id: 'M20', equipment: 'telescope' },
-  { id: 'M22', equipment: 'binoculars' },
-  { id: 'M29', equipment: 'binoculars' },
-  { id: 'M34', equipment: 'binoculars' },
-  { id: 'M39', equipment: 'binoculars' },
-  { id: 'M46', equipment: 'binoculars' },
-  { id: 'M48', equipment: 'binoculars' },
-  { id: 'M52', equipment: 'binoculars' },
-  { id: 'M67', equipment: 'telescope' },
-  { id: 'M92', equipment: 'telescope' },
-  { id: 'M33', equipment: 'telescope' },
-  { id: 'M51', equipment: 'telescope' },
-  { id: 'M63', equipment: 'telescope' },
-  { id: 'M64', equipment: 'telescope' },
-  { id: 'M94', equipment: 'telescope' },
-  { id: 'M104', equipment: 'telescope' },
-  { id: 'C6', equipment: 'telescope' },
-  { id: 'C10', equipment: 'binoculars' },
-  { id: 'C13', equipment: 'binoculars' },
-  { id: 'C14', equipment: 'binoculars' },
-  { id: 'C15', equipment: 'telescope' },
-  { id: 'C16', equipment: 'binoculars' },
-  { id: 'C22', equipment: 'telescope' },
-  { id: 'C28', equipment: 'binoculars' },
-  { id: 'C30', equipment: 'telescope' },
-  { id: 'C33', equipment: 'telescope' },
-  { id: 'C37', equipment: 'binoculars' },
-  { id: 'C39', equipment: 'telescope' },
-  { id: 'C41', equipment: 'eyes' },
-  { id: 'C50', equipment: 'binoculars' },
-  { id: 'C55', equipment: 'telescope' },
-  { id: 'C58', equipment: 'binoculars' },
-  { id: 'C59', equipment: 'telescope' },
-  { id: 'C63', equipment: 'telescope' },
-  { id: 'C65', equipment: 'telescope' },
-  { id: 'C76', equipment: 'binoculars' },
-  { id: 'C77', equipment: 'telescope' },
-  { id: 'C80', equipment: 'eyes' },
-  { id: 'C85', equipment: 'eyes' },
-  { id: 'C91', equipment: 'binoculars' },
-  { id: 'C92', equipment: 'binoculars' },
-  { id: 'C94', equipment: 'binoculars' },
-  { id: 'C96', equipment: 'binoculars' },
-  { id: 'C102', equipment: 'eyes' },
-  { id: 'C103', equipment: 'telescope' },
-  { id: 'C106', equipment: 'binoculars' },
-];
+// Website and notifications share full-catalogue recommendations.
 const MAX_TARGETS = 12;
-const EQUIPMENT: Equipment[] = ['eyes', 'binoculars', 'telescope'];
-const SOLAR_SYSTEM = [Body.Moon, Body.Jupiter, Body.Saturn, Body.Venus, Body.Mars];
+/**
+ * Hand-picked adjustment on top of the catalogue difficulty: well-known showpieces that reward
+ * any telescope rise a little, objects that usually disappoint (an asterism, a double star,
+ * sparse clusters) sink. Small values; altitude, Moon and darkness still decide.
+ */
+const QUALITY: Record<string, number> = {
+  M31: 12,
+  M42: 12,
+  M45: 10,
+  M13: 8,
+  M57: 8,
+  M27: 8,
+  C14: 8,
+  M44: 6,
+  M51: 6,
+  M8: 5,
+  M11: 5,
+  M22: 5,
+  M81: 4,
+  M82: 4,
+  M92: 4,
+  M17: 4,
+  M35: 3,
+  M3: 3,
+  M5: 3,
+  M40: -30,
+  M73: -30,
+  M102: -20,
+  C37: -15,
+  C16: -12,
+  C11: -8,
+};
+/** Objects that share the eyepiece field of a brighter target: list only the parent. */
+const COMPANION_OF: Record<string, string> = { m32: 'm31', m110: 'm31', m43: 'm42' };
+/** 0 at astronomical darkness (-18 degrees), 1 at the end of nautical twilight (-12 degrees). */
+function twilight(sunAltitude: number): number {
+  return Math.max(0, Math.min(1, (sunAltitude + 18) / 6));
+}
+/** Earliest point that is nearly as good as the best: a practical time, not the small hours. */
+function practicalPoint<T extends { time: number; score: number }>(points: T[]): T | undefined {
+  const top = points[0]?.score;
+  if (top === undefined) return undefined;
+  return points.filter((p) => p.score >= top - 3).sort((a, b) => a.time - b.time)[0];
+}
+const SOLAR_SYSTEM = [
+  Body.Moon,
+  Body.Mercury,
+  Body.Venus,
+  Body.Mars,
+  Body.Jupiter,
+  Body.Saturn,
+  Body.Uranus,
+  Body.Neptune,
+];
 interface Sample {
   time: number;
+  sunAltitude: number;
   moonAltitude: number;
   moonIllumination: number;
   moonAzimuth: number;
@@ -172,7 +150,7 @@ function samplesFor(advice: Advice): Sample[] {
   if (!preferences.days.includes(new Date(advice.night + 'T12:00:00Z').getUTCDay())) return [];
   const sunLimit =
     preferences.profile === 'deep-sky' ? -18 : preferences.profile === 'moon-planets' ? -6 : -12;
-  const times = new Set<number>();
+  const times = new Map<number, number>();
   for (const slot of advice.slots) {
     const start = Math.max(slot.start, generatedAt, best?.start ?? -Infinity);
     const end = Math.min(slot.end, best?.end ?? Infinity);
@@ -180,19 +158,21 @@ function samplesFor(advice: Advice): Sample[] {
     // Include the start and midpoint, never the exclusive end of an observing window.
     for (const time of [start, start + (end - start) / 2]) {
       if (
-        observingNight(time, place.timeZone) === advice.night &&
-        selectedMinute(localParts(time, place.timeZone).minute, advice) &&
-        altitude(Body.Sun, time, place.latitude, place.longitude).altitude <= sunLimit
+        observingNight(time, place.timeZone) !== advice.night ||
+        !selectedMinute(localParts(time, place.timeZone).minute, advice)
       )
-        times.add(time);
+        continue;
+      const sun = altitude(Body.Sun, time, place.latitude, place.longitude).altitude;
+      if (sun <= sunLimit) times.set(time, sun);
     }
   }
   return [...times]
-    .sort((a, b) => a - b)
-    .map((time) => {
+    .sort(([a], [b]) => a - b)
+    .map(([time, sunAltitude]) => {
       const moon = altitude(Body.Moon, time, place.latitude, place.longitude);
       return {
         time,
+        sunAltitude,
         moonAltitude: moon.altitude,
         moonAzimuth: moon.azimuth,
         moonIllumination: Illumination(Body.Moon, new Date(time)).phase_fraction * 100,
@@ -221,83 +201,50 @@ function coordinate(value: string): number {
   return (value.startsWith('-') ? -1 : 1) * (degrees + minutes / 60 + seconds / 3600);
 }
 
-function deepSkyTip(type: string, equipment: Equipment): string {
-  if (equipment === 'eyes')
-    return type.includes('Galaxy')
-      ? 'Find a dark spot, let your eyes adapt and look for a faint patch rather than spiral detail.'
-      : 'Let your eyes adapt and look for the cluster as a small gathering of stars or a hazy patch.';
-  if (equipment === 'binoculars')
-    return type.includes('Cluster')
-      ? 'Rest your elbows or mount the binoculars, then sweep slowly across the surrounding stars.'
-      : 'Use a steady support and look slightly to one side to pick out the faint glow.';
+function deepSkyTip(type: string): string {
   if (type === 'Open Cluster')
-    return 'Start with your widest field and low magnification to keep the surrounding stars in view.';
+    return 'Start with a wide field and low magnification to keep the surrounding stars in view.';
   if (type === 'Globular Cluster')
     return 'Start at low power, then increase magnification if the air is steady; look around the edge.';
   if (type === 'Planetary Nebula')
     return 'Locate the field at low power, then try more magnification to separate the nebula from stars.';
   return 'Use low magnification and averted vision; expect a faint glow rather than photographic colour.';
 }
-
-function observingTip(
-  id: string,
-  record: CatalogTarget,
-  equipment: Equipment,
-  low: boolean,
-  moonlight: boolean,
-): string {
-  const wideCluster = ['M45', 'M44', 'M7', 'C14', 'C41', 'C85', 'C102'].includes(id);
-  const tip =
-    equipment === 'telescope' && wideCluster
-      ? 'This is a wide star field: use your lowest power, or explore the whole cluster with binoculars.'
-      : equipment === 'binoculars' && record.type === 'Globular Cluster'
-        ? 'Steady the binoculars and look for a compact, hazy patch; resolving individual stars takes a telescope.'
-        : deepSkyTip(record.type, equipment);
+function observingTip(id: string, record: CatalogTarget, low: boolean, moonlight: boolean): string {
+  const wide = ['M45', 'M44', 'M7', 'C14', 'C41', 'C85', 'C102'].includes(id);
   return (
-    tip +
+    (wide
+      ? 'This is a wide star field: use low magnification to keep the whole cluster in view.'
+      : deepSkyTip(record.type)) +
     (moonlight ? ' Moonlight will reduce contrast.' : '') +
     (low ? ' Low in the sky: choose an unobstructed horizon.' : '')
   );
 }
-
-function solarTip(body: Body, equipment: Equipment, moonIllumination?: number): string {
-  if (body === Body.Moon) {
-    if (equipment === 'eyes') return 'Compare the dark lunar seas with the brighter highlands.';
-    if (moonIllumination !== undefined && moonIllumination >= 95)
-      return equipment === 'binoculars'
-        ? 'With the Moon nearly full, steady the binoculars and compare the dark seas and bright ray patterns.'
-        : 'Near full Moon, explore bright crater rays and dark lunar seas; shadows are short.';
-    if (!Number.isFinite(moonIllumination))
-      return equipment === 'binoculars'
-        ? 'Steady the binoculars and compare the dark lunar seas with the brighter highlands.'
-        : 'Start at low power and explore the lunar seas, bright highlands and crater markings.';
-    if (equipment === 'binoculars')
-      return 'Steady the binoculars and follow the boundary between the sunlit and dark surface.';
-    return 'Start at low power and explore crater edges near the boundary between light and shadow.';
-  }
-  if (equipment === 'eyes')
-    return body === Body.Mars
-      ? 'Look for a warm, reddish point among the surrounding stars.'
-      : 'Find the planet among the stars, then compare its brightness and steadiness.';
-  if (equipment === 'binoculars')
-    return body === Body.Jupiter
-      ? 'With steady binoculars, try to pick out the brightest moons beside Jupiter.'
-      : 'Use a steady support to locate the planet; fine planetary detail needs a telescope.';
+function solarTip(body: Body, moonIllumination?: number): string {
+  if (body === Body.Moon && !Number.isFinite(moonIllumination))
+    return 'Explore the lunar seas, bright highlands and crater markings.';
+  if (body === Body.Moon)
+    return moonIllumination !== undefined && moonIllumination >= 95
+      ? 'Near full Moon, explore bright crater rays and dark lunar seas; shadows are short.'
+      : 'Explore crater edges near the boundary between light and shadow.';
   if (body === Body.Jupiter)
-    return 'Look for the Galilean moons, then try more magnification for the cloud bands if the air is steady.';
+    return 'Look for the Galilean moons and cloud bands when the air is steady.';
   if (body === Body.Saturn)
     return 'Start at low power, then increase magnification to explore the ringed outline.';
-  if (body === Body.Venus)
-    return 'Look for the shape of the illuminated disc; its cloud-covered surface hides fine detail.';
-  return 'Try higher magnification only when the image is steady; visible detail depends on its apparent size.';
+  if (body === Body.Venus || body === Body.Mercury)
+    return 'Look for the shape of the illuminated disc after sunset; keep the Sun below the horizon.';
+  if (body === Body.Uranus || body === Body.Neptune)
+    return 'Use the finder chart to identify the faint planet among the surrounding stars.';
+  return 'Look for the reddish disc; visible detail depends on apparent size and steady air.';
 }
-
 function solarDescription(body: Body): string {
   if (body === Body.Moon)
     return "Earth's natural satellite, with dark lunar seas and bright highlands.";
   if (body === Body.Jupiter) return 'A gas giant with cloud bands and a family of moons.';
   if (body === Body.Saturn) return 'The ringed gas giant.';
   if (body === Body.Venus) return 'A bright planet with changing phases.';
+  if (body === Body.Mercury) return 'The innermost planet, with changing phases.';
+  if (body === Body.Uranus || body === Body.Neptune) return 'A distant ice giant.';
   return 'The Red Planet.';
 }
 
@@ -321,7 +268,6 @@ export function decorateSavedTargets(advice: Advice): EveningTarget[] {
         difficulty: null,
         tip: solarTip(
           body,
-          advice.preferences.equipment,
           advice.slots.find((slot) => target.time >= slot.start && target.time < slot.end)
             ?.moonIllumination,
         ),
@@ -338,7 +284,7 @@ export function decorateSavedTargets(advice: Advice): EveningTarget[] {
         image: record.image,
         description: record.type + ' in ' + record.constellation + '.',
         difficulty: catalogDifficulty(record),
-        tip: deepSkyTip(record.type, advice.preferences.equipment),
+        tip: deepSkyTip(record.type),
       };
     }
     // Keep unrecognised future report targets intact rather than guessing their identity.
@@ -379,12 +325,15 @@ export function buildEveningTargets(
           ...altitude(body, sample.time, place.latitude, place.longitude),
         }))
         .filter((point) => point.altitude >= 20)
-        .sort((a, b) => b.altitude - a.altitude);
-      const point = points[0];
+        .map((point) => ({ ...point, score: Math.min(point.altitude, 65) * 0.5 }))
+        .sort((a, b) => b.score - a.score);
+      const point = practicalPoint(points);
       if (!point) continue;
       const id = body.toLowerCase();
+      // Faint planets (Uranus, Neptune) are a finder exercise, not a showpiece.
+      const magnitude = body === Body.Moon ? -12 : Illumination(body, new Date(point.time)).mag;
       candidates.push({
-        score: 105 + Math.min(point.altitude, 65) * 0.5,
+        score: 105 + point.score - Math.max(0, magnitude - 1) * 4,
         group: body === Body.Moon ? 'Moon' : 'Planet',
         target: {
           id,
@@ -398,7 +347,7 @@ export function buildEveningTargets(
               ? phaseName(point.time) + ' · ' + Math.round(point.moonIllumination) + '% illuminated'
               : solarDescription(body),
           difficulty: null,
-          tip: solarTip(body, preferences.equipment, point.moonIllumination),
+          tip: solarTip(body, point.moonIllumination),
           time: point.time,
           altitude: point.altitude,
           azimuth: point.azimuth,
@@ -407,26 +356,26 @@ export function buildEveningTargets(
     }
   }
   if (preferences.profile !== 'moon-planets') {
-    for (const entry of DEEP_SKY) {
-      if (EQUIPMENT.indexOf(entry.equipment) > EQUIPMENT.indexOf(preferences.equipment)) continue;
-      const record = CATALOG.get(entry.id);
-      if (!record) continue;
+    for (const [catalogId, record] of CATALOG) {
       const difficulty = catalogDifficulty(record);
       // Apply the user's ceiling before ranking or limiting the list; never fill with harder objects.
       if (difficultyLevel(difficulty) > difficultyLevel(maxDifficulty)) continue;
-      const compactPlanetary = record.type === 'Planetary Nebula' && entry.id !== 'C63';
+      const ra = coordinate(record.rightAscension) * 15,
+        dec = coordinate(record.declination);
+      if (!Number.isFinite(ra) || !Number.isFinite(dec) || Math.abs(dec) > 90) continue;
+      const compactPlanetary = record.type === 'Planetary Nebula' && catalogId !== 'C63';
       const diffuse =
         record.type.includes('Galaxy') ||
         (record.type.includes('Nebula') && !compactPlanetary) ||
         record.type === 'Supernova Remnant';
-      const needsDarkSky = ['M33', 'C33', 'C63'].includes(entry.id);
+      const needsDarkSky = ['M33', 'C33', 'C63'].includes(catalogId);
       const points = samples
         .map((sample) => {
           const date = new Date(sample.time);
           const vector = VectorFromSphere(
             {
-              lon: coordinate(record.rightAscension) * 15,
-              lat: coordinate(record.declination),
+              lon: ra,
+              lat: dec,
               dist: 1,
             },
             date,
@@ -437,11 +386,7 @@ export function buildEveningTargets(
           const separation = moonSeparation(horizon.lat, azimuth, sample);
           // Conservative planning cutoffs, not measured visibility probabilities: avoid glare close
           // to a bright Moon and reserve especially low-contrast objects for less moonlit hours.
-          const obscuredByMoon =
-            brightMoon &&
-            (needsDarkSky ||
-              (diffuse && preferences.equipment === 'eyes') ||
-              separation < (diffuse ? 45 : 20));
+          const obscuredByMoon = brightMoon && (needsDarkSky || separation < (diffuse ? 45 : 20));
           const moonStrength =
             sample.moonAltitude > 0
               ? (sample.moonIllumination / 100) * Math.min(1, sample.moonAltitude / 30)
@@ -456,33 +401,33 @@ export function buildEveningTargets(
             brightMoon,
             obscuredByMoon,
             // Above 65° there is little practical reason to prefer altitude over easier finding.
-            // Moonlight only subtracts: it must never move the suggested time into worse conditions.
-            score: Math.min(horizon.lat, 65) * 0.5 - moonPenalty,
+            // Moonlight and twilight only subtract: they never move the time into worse conditions.
+            score:
+              Math.min(horizon.lat, 65) * 0.5 -
+              moonPenalty -
+              twilight(sample.sunAltitude) * (diffuse ? 20 : compactPlanetary ? 8 : 3),
           };
         })
         .filter((point) => point.altitude >= 25 && !point.obscuredByMoon)
         .sort((a, b) => b.score - a.score);
-      const point = points[0];
+      const point = practicalPoint(points);
       if (!point) continue;
-      const id = entry.id.toLowerCase();
+      const id = catalogId.toLowerCase();
+      // A wide difficulty ceiling is a wish to see harder objects, so difficulty weighs less.
+      const step = difficultyLevel(maxDifficulty) >= 4 ? 5 : 12;
       candidates.push({
-        score: 100 - (difficultyLevel(difficulty) - 1) * 12 + point.score,
+        score:
+          100 - (difficultyLevel(difficulty) - 1) * step + point.score + (QUALITY[catalogId] ?? 0),
         group: record.type.includes('Galaxy') ? 'Galaxy' : record.type,
         target: {
           id,
-          name: entry.id + ' · ' + record.name,
+          name: catalogId + ' · ' + record.name,
           kind: record.type,
           url: '/dso/' + id,
           image: record.image,
           description: record.type + ' in ' + record.constellation + '.',
           difficulty,
-          tip: observingTip(
-            entry.id,
-            record,
-            preferences.equipment,
-            point.altitude < 35,
-            diffuse && point.brightMoon,
-          ),
+          tip: observingTip(catalogId, record, point.altitude < 35, diffuse && point.brightMoon),
           time: point.time,
           altitude: point.altitude,
           azimuth: point.azimuth,
@@ -492,16 +437,20 @@ export function buildEveningTargets(
   }
   const chosen: Candidate[] = [];
   const counts = new Map<string, number>();
-  // Variety is a small tie-break (at most 4 points), never a quota that forces difficult objects in.
+  // Variety costs 5 points per earlier pick of the same kind (at most 15): enough to stop one type
+  // filling the list, never a quota that forces difficult objects in.
   while (candidates.length && chosen.length < MAX_TARGETS) {
     const adjusted = (candidate: Candidate) =>
-      candidate.score - Math.min(2, counts.get(candidate.group) ?? 0) * 2;
+      candidate.score - Math.min(3, counts.get(candidate.group) ?? 0) * 5;
     candidates.sort((a, b) => adjusted(b) - adjusted(a) || a.target.id.localeCompare(b.target.id));
     const candidate = candidates.shift()!;
+    const parent = COMPANION_OF[candidate.target.id];
+    if (parent && chosen.some((c) => c.target.id === parent)) continue;
     chosen.push(candidate);
     counts.set(candidate.group, (counts.get(candidate.group) ?? 0) + 1);
   }
-  return chosen.map(({ target }) => ({
+  return chosen.map(({ target }, index) => ({
+    rank: index + 1,
     ...target,
     altitude: Math.round(target.altitude * 10) / 10,
     azimuth: Math.round(target.azimuth * 10) / 10,

@@ -45,8 +45,8 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpClient<INasaApodService, NasaApodService>(client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(5);
-    //in toekomst misschien polly / retry?
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("StarWatchr/1.0 (+https://starwatchr.com)");
 });
 
 

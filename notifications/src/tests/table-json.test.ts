@@ -24,6 +24,13 @@ const forecast = {
       precipitationProbability: 10,
       precipitation: 0,
       wind500Kmh: 10,
+      upperAir: [500, 300, 250, 200].map((pressureHpa, index) => ({
+        pressureHpa,
+        windKmh: 30 + index * 20,
+        windDirection: 270,
+        temperatureC: -20 - index * 15,
+        heightM: 5600 + index * 2000,
+      })),
     })),
   },
 };
